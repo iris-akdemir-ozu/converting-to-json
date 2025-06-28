@@ -9,6 +9,7 @@ export class CsvUploaderComponent {
   // Output events to communicate with parent component
   @Output() onConvert = new EventEmitter<any>()
   @Output() onError = new EventEmitter<string>()
+  @Output() onFileClear = new EventEmitter<void>()
 
   // Track selected file and upload state
   selectedFile: File | null = null
@@ -50,7 +51,11 @@ export class CsvUploaderComponent {
     if (fileInput) {
       fileInput.value = ""
     }
+    
+    // Emit clear event to parent component
+    this.onFileClear.emit()
   }
+  
 
   /**
    * Converts CSV file to JSON format

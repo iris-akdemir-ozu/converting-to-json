@@ -56,6 +56,7 @@ p {
   justify-content: center;
   transition: all 0.3s ease;
   z-index: 10;
+  animation: fadeIn 0.3s ease-in;
   
   &:hover {
     background: #c82333;
@@ -106,6 +107,12 @@ p {
   0% { opacity: 1; }
   50% { opacity: 0.6; }
   100% { opacity: 1; }
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-50%) scale(0.8); }
+  to { opacity: 1; transform: translateY(-50%) scale(1); }
 }
 
 /* Responsive design */

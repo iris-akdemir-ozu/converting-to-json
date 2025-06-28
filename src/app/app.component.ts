@@ -52,6 +52,20 @@ export class AppComponent {
     this.tableHeaders = []
   }
 
+
+  /**
+   * This method is called when the user clears/removes the selected file
+   */
+  onFileClear(): void {
+    console.log("File selection cleared - resetting table data")
+
+    // Clear all data to return to initial state
+    this.jsonData = []
+    this.tableHeaders = []
+    this.searchTerm = ""
+
+    console.log("Table data cleared successfully")
+  }
   /**
    * Method to simulate sending data to backend
    * In a real application, you would make an HTTP request here

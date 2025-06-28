@@ -6,7 +6,8 @@
     <!-- CSV Uploader Component -->
     <app-csv-uploader 
       (onConvert)="onCsvConverted($event)"
-      (onError)="onConversionError($event)">
+      (onError)="onConversionError($event)"
+      (onFileClear)="onFileClear()">
     </app-csv-uploader>
     
     <!-- Send to Backend Button -->
