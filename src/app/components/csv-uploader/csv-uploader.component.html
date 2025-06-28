@@ -1,0 +1,39 @@
+<div class="file-upload">
+  <h3>Upload CSV File</h3>
+  
+  <!-- File Input Section -->
+  <div class="file-input-container">
+    <input 
+      id="csvFileInput"
+      type="file" 
+      accept=".csv" 
+      class="form-control"
+      (change)="onFileSelect($event)"
+      [disabled]="isProcessing">
+    
+    <!-- Cancel Button - shown when file is selected -->
+    <button 
+      *ngIf="selectedFile && !isProcessing" 
+      class="cancel-btn"
+      (click)="clearSelection()"
+      title="Cancel file selection">
+      ✕
+    </button>
+  </div>
+  
+  <!-- File Status Display -->
+  <div class="file-status">
+    <p *ngIf="!selectedFile && !isProcessing" class="help-text">
+      Select a CSV file to convert to JSON and display as a table
+    </p>
+    
+    <p *ngIf="selectedFile && !isProcessing" class="selected-file">
+      📄 Selected: <strong>{{selectedFile.name}}</strong> 
+      <span class="file-size">({{(selectedFile.size / 1024).toFixed(1)}} KB)</span>
+    </p>
+    
+    <p *ngIf="isProcessing" class="processing">
+      🔄 Processing <strong>{{selectedFile?.name}}</strong>...
+    </p>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+<div *ngIf="data.length > 0; else noData">
+  <h3>Converted Data ({{filteredData.length}} records)</h3>
+  
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th *ngFor="let header of headers">{{header}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of filteredData; let i = index">
+          <td *ngFor="let header of headers">
+            {{row[header] || '-'}}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<ng-template #noData>
+  <div class="no-data">
+    <p>No data available. Please upload a CSV file.</p>
+  </div>
+</ng-template>
