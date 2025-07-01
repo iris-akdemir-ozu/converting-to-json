@@ -14,6 +14,7 @@ export class CsvUploaderComponent {
   // Track selected file and upload state
   selectedFile: File | null = null
   isProcessing = false
+  hasHeader: boolean = true // default to true
 
   /**
    * Handles file selection and conversion
@@ -98,13 +99,21 @@ export class CsvUploaderComponent {
       throw new Error("CSV file is empty")
     }
 
-    // First line contains headers/properties
-    const headers = lines[0].split(",").map((header) => header.trim().replace(/"/g, ""))
+    let headers: string[]
+    let dataStartIndex = 1
+    if (this.hasHeader) {
+      headers = lines[0].split(",").map((header) => header.trim().replace(/"/g, ""))
+    } else {
+      // Generate generic column names based on the first row's number of columns
+      headers = lines[0].split(",").map((_, idx) => `column${idx + 1}`)
+      dataStartIndex = 0
+    }
+
 
     // Convert remaining lines to JSON objects
     const jsonArray: any[] = []
 
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = dataStartIndex; i < lines.length; i++) {
       const values = lines[i].split(",").map((value) => value.trim().replace(/"/g, ""))
 
       if (values.length === headers.length) {
@@ -119,6 +128,14 @@ export class CsvUploaderComponent {
     return {
       properties: headers,
       result: jsonArray,
+    }
+  }
+
+  // Called when the header checkbox is toggled
+  onHeaderCheckboxChange(): void {
+    if (this.selectedFile && !this.isProcessing) {
+      this.isProcessing = true;
+      this.convertCsvToJson(this.selectedFile);
     }
   }
 }

@@ -1,5 +1,5 @@
 <div class="file-upload">
-  <h3>Upload CSV File</h3>
+  <h3>Upload a File</h3>
   
   <!-- File Input Section -->
   <div class="file-input-container">
@@ -10,6 +10,21 @@
       class="form-control"
       (change)="onFileSelect($event)"
       [disabled]="isProcessing">
+
+    
+  <!-- Update the checkbox section -->
+  <div *ngIf="selectedFile" style="margin-bottom: 15px;">
+    <div style="margin-bottom: 10px;">
+      <label style="display: flex; align-items: center; font-size: 14px; cursor: pointer;">
+        <input 
+          type="checkbox" 
+          [(ngModel)]="hasHeader" 
+          (change)="onHeaderCheckboxChange()" 
+          [disabled]="isProcessing"
+          style="margin-right: 8px;"> 
+        File has a header line
+      </label>
+    </div>
     
     <!-- Cancel Button - shown when file is selected -->
     <button 
@@ -24,16 +39,15 @@
   <!-- File Status Display -->
   <div class="file-status">
     <p *ngIf="!selectedFile && !isProcessing" class="help-text">
-      Select a CSV file to convert to JSON and display as a table
     </p>
     
     <p *ngIf="selectedFile && !isProcessing" class="selected-file">
-      📄 Selected: <strong>{{selectedFile.name}}</strong> 
+      Selected: <strong>{{selectedFile.name}}</strong> 
       <span class="file-size">({{(selectedFile.size / 1024).toFixed(1)}} KB)</span>
     </p>
     
     <p *ngIf="isProcessing" class="processing">
-      🔄 Processing <strong>{{selectedFile?.name}}</strong>...
+      Processing <strong>{{selectedFile?.name}}</strong>...
     </p>
   </div>
 </div>
