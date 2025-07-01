@@ -10,6 +10,8 @@ export class DataTableComponent {
   @Input() data: any[] = []
   @Input() headers: string[] = []
   @Input() searchTerm = ""
+  @Input() hasHeader = true // New input to know if file has header
+  @Input() showQuotes = false // New input to know if quotes should be visible
 
   /**
    * Get filtered data based on search term

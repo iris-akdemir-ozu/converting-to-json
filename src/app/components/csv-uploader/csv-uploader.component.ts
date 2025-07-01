@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Output } from "@angular/core"
+
 // Interface for CSV parsing options
 interface CsvOptions {
   hasHeader: boolean
@@ -6,6 +7,7 @@ interface CsvOptions {
   selectedDelimiter: string
   doubleQuoteWrap: boolean
 }
+
 @Component({
   selector: "app-csv-uploader",
   templateUrl: "./csv-uploader.component.html",
@@ -23,8 +25,8 @@ export class CsvUploaderComponent {
   isProcessing = false
   hasHeader = true // default to true
   skipEmptyLines = true // default to true (skip empty lines)
-  selectedDelimiter = "," // default to comma
-  doubleQuoteWrap = false
+  selectedDelimiter = "," 
+  doubleQuoteWrap = true
 
   // Delimiter options for the dropdown
   delimiterOptions = [
@@ -53,7 +55,7 @@ export class CsvUploaderComponent {
         this.isProcessing = true
         this.convertCsvToJson(file)
       } else {
-        this.onError.emit("Please select a valid CSV file!")
+        this.onError.emit("Please select a valid file!")
         this.clearSelection()
       }
     }
@@ -102,6 +104,7 @@ export class CsvUploaderComponent {
         const jsonResult = this.parseCsvToJson(csvContent)
         this.isProcessing = false
         this.onConvert.emit(jsonResult)
+        this.emitOptions() // Emit current options after successful conversion
       } catch (error) {
         this.isProcessing = false
         this.onError.emit("Error reading file: " + error)
@@ -136,6 +139,7 @@ export class CsvUploaderComponent {
     // First, determine headers
     if (this.hasHeader) {
       headers = this.parseCSVLine(allLines[0])
+      console.log("Parsed headers:", headers) // Debug log
       dataLines = allLines.slice(1)
     } else {
       // Generate generic column names based on the first non-empty row's number of columns
@@ -152,28 +156,31 @@ export class CsvUploaderComponent {
     const jsonArray: any[] = []
 
     for (const line of dataLines) {
-      // Check if we should skip this line
+      // Skip completely blank lines first
+      if (line.trim() === "") {
+        continue
+      }
+
+      // Check if we should skip this line based on empty row detection
       if (this.skipEmptyLines && this.isEmptyRow(line)) {
         continue // Skip this row
       }
 
-      // If not skipping empty lines, or if the row has content, process it
-      if (!this.skipEmptyLines || !this.isEmptyRow(line)) {
-        const values = line.split(this.selectedDelimiter).map((value) => value.trim().replace(/"/g, ""))
+      // Process the row
+      const values = this.parseCSVLine(line)
 
-        // Ensure we have the right number of columns (pad with empty strings if needed)
-        while (values.length < headers.length) {
-          values.push("")
-        }
+      // Ensure we have the right number of columns (pad with empty strings if needed)
+      while (values.length < headers.length) {
+        values.push("")
+      }
 
-        // Only include rows that have the expected number of columns (or fewer)
-        if (values.length >= headers.length) {
-          const obj: any = {}
-          headers.forEach((header, index) => {
-            obj[header] = values[index] || ""
-          })
-          jsonArray.push(obj)
-        }
+      // Only include rows that have the expected number of columns (or fewer)
+      if (values.length >= headers.length) {
+        const obj: any = {}
+        headers.forEach((header, index) => {
+          obj[header] = values[index] || ""
+        })
+        jsonArray.push(obj)
       }
     }
 
@@ -189,12 +196,15 @@ export class CsvUploaderComponent {
    * @returns Array of parsed values
    */
   private parseCSVLine(line: string): string[] {
-    if (!this.doubleQuoteWrap) { // seçilmediyse direkt eski yöntem
-      // Simple split if not handling quotes
-      // sadece boşluğu siler, tırnak varsa olduğu gibi kalıyor
-      return line.split(this.selectedDelimiter)
+    console.log("Parsing line:", line, "with doubleQuoteWrap:", this.doubleQuoteWrap) // Debug log
+
+    if (!this.doubleQuoteWrap) {
+      // Simple split - preserve ALL characters including quotes
+      const result = line.split(this.selectedDelimiter)
+      return result
     }
 
+    // Complex parsing for quote handling
     const result: string[] = []
     let current = ""
     let inQuotes = false
@@ -205,15 +215,15 @@ export class CsvUploaderComponent {
       const nextChar = line[i + 1]
 
       if (char === '"' && !inQuotes) {
-        // Start of quoted section
+        // Start of quoted section - don't include the opening quote
         inQuotes = true
       } else if (char === '"' && inQuotes) {
         if (nextChar === '"') {
-          // Escaped quote (double quote)
+          // Escaped quote (double quote) - include one quote in the result
           current += '"'
           i++ // Skip next quote
         } else {
-          // End of quoted section
+          // End of quoted section - don't include the closing quote
           inQuotes = false
         }
       } else if (char === this.selectedDelimiter && !inQuotes) {
@@ -235,31 +245,26 @@ export class CsvUploaderComponent {
   /**
    * Helper method to check if a row is empty
    * @param line - The CSV line to check
-   * @returns sadece delimiter/whitespace veya tırnak işareti bulunduruyorsa true döndürüyor
+   * @returns true if the row is empty or contains only empty quoted values/delimiters/whitespace
    */
   private isEmptyRow(line: string): boolean {
     if (!this.doubleQuoteWrap) {
       // Simple check for non-quote-wrap mode
-      // Split by delimiter and check if all parts are empty or just quotes
       const values = line.split(this.selectedDelimiter)
       const hasContent = values.some((value) => {
-        const trimmed = value.replace(/^\s+|\s+$/g, "") // tırnak gözükecek biçimde düzenliyor
+        const trimmed = value.trim()
         // Consider empty if it's empty, just quotes, or just whitespace
-        return trimmed !== "" && trimmed !== '""' && trimmed !== "'"
+        return trimmed !== "" && trimmed !== '""' && trimmed !== "''"
       })
       return !hasContent
     } else {
-      //double quote varken parsing yapıyor mantık eskisiyle aynı
+      // Parse the line using the same logic as data parsing for quote-wrap mode
       const values = this.parseCSVLine(line)
-
       // Check if all values are empty after parsing
       const hasContent = values.some((value) => value.trim() !== "")
-
-      // Remove all whitespace and delimiters, if nothing is left, it's empty
-      // If no value has content, it's an empty row
       return !hasContent
+    }
   }
-}
 
   // Called when the header checkbox is toggled
   onHeaderCheckboxChange(): void {
@@ -277,8 +282,8 @@ export class CsvUploaderComponent {
     }
   }
 
-   // Called when the delimiter selection changes
-   onDelimiterChange(): void {
+  // Called when the delimiter selection changes
+  onDelimiterChange(): void {
     if (this.selectedFile && !this.isProcessing) {
       this.isProcessing = true
       this.convertCsvToJson(this.selectedFile)
@@ -292,5 +297,4 @@ export class CsvUploaderComponent {
       this.convertCsvToJson(this.selectedFile)
     }
   }
-
 }
