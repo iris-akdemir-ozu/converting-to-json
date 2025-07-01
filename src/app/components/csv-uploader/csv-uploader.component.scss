@@ -69,33 +69,72 @@ p {
   }
 }
 
-// Improve checkbox styling
-.checkbox-section {
+// New styles for the options section
+.options-section {
   margin-bottom: 15px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  position: relative;
+}
+
+.option-item {
+  margin-bottom: 12px;
   
-  .checkbox-item {
-    margin-bottom: 10px;
-    
-    label {
-      display: flex;
-      align-items: center;
-      font-size: 14px;
-      cursor: pointer;
-      color: #333;
-      
-      input[type="checkbox"] {
-        margin-right: 8px;
-        cursor: pointer;
-        
-        &:disabled {
-          cursor: not-allowed;
-          opacity: 0.6;
-        }
-      }
-    }
+  &:last-child {
+    margin-bottom: 0;
   }
 }
 
+.option-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  cursor: pointer;
+  color: #333;
+  gap: 8px;
+  
+  &:hover {
+    color: #007bff;
+  }
+}
+
+.option-checkbox {
+  cursor: pointer;
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.option-text {
+  font-weight: 500;
+  min-width: 70px;
+}
+
+.delimiter-select {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  }
+  
+  &:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
 
 .file-status {
   min-height: 24px;
@@ -137,7 +176,6 @@ p {
   100% { opacity: 1; }
 }
 
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-50%) scale(0.8); }
   to { opacity: 1; transform: translateY(-50%) scale(1); }
@@ -155,5 +193,15 @@ p {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+  }
+  
+  .option-label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .delimiter-select {
+    width: 100%;
   }
 }

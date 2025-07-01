@@ -1,19 +1,18 @@
 <div class="container">
   <div class="card">
-    <h1>{{title}}</h1>
-    <p>Upload a CSV file to convert it to JSON format and display as a table</p>
     
     <!-- CSV Uploader Component -->
     <app-csv-uploader 
       (onConvert)="onCsvConverted($event)"
       (onError)="onConversionError($event)"
-      (onFileClear)="onFileClear()">
+      (onFileClear)="onFileClear()"
+      (onOptionsChange)="onOptionsChanged($event)">
     </app-csv-uploader>
     
     <!-- Send to Backend Button -->
     <div *ngIf="jsonData.length > 0" style="margin-top: 20px;">
       <button class="btn btn-primary" (click)="sendToBackend()">
-        Send Data to Backend
+        Send Data
       </button>
     </div>
   </div>
@@ -32,7 +31,9 @@
     <app-data-table 
       [data]="jsonData" 
       [headers]="tableHeaders"
-      [searchTerm]="searchTerm">
+      [searchTerm]="searchTerm"
+      [hasHeader]="csvOptions.hasHeader"
+      [showQuotes]="!csvOptions.doubleQuoteWrap">
     </app-data-table>
   </div>
 </div>

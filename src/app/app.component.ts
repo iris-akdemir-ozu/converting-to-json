@@ -5,13 +5,20 @@ interface TableData {
   [key: string]: any // This allows dynamic properties
 }
 
+// Interface for CSV parsing options
+interface CsvOptions {
+  hasHeader: boolean
+  skipEmptyLines: boolean
+  selectedDelimiter: string
+  doubleQuoteWrap: boolean
+}
 @Component({
   selector: "app-root",
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
 })
 export class AppComponent {
-  title = "CSV to JSON Converter"
+
 
   // This will store our converted JSON data in memory
   jsonData: TableData[] = []
@@ -21,6 +28,16 @@ export class AppComponent {
 
   // Search functionality
   searchTerm = ""
+
+
+  // CSV parsing options
+  csvOptions: CsvOptions = {
+    hasHeader: true,
+    skipEmptyLines: true,
+    selectedDelimiter: ",",
+    doubleQuoteWrap: true,
+  }
+
 
   /**
    * This method is called when CSV is successfully converted to JSON
@@ -65,7 +82,19 @@ export class AppComponent {
     this.searchTerm = ""
 
     console.log("Table data cleared successfully")
+
+    
   }
+
+  /**
+   * This method is called when CSV parsing options change
+   * @param options - The current CSV parsing options
+   */
+  onOptionsChanged(options: CsvOptions): void {
+    console.log("CSV options changed:", options)
+    this.csvOptions = { ...options }
+  }
+
   /**
    * Method to simulate sending data to backend
    * In a real application, you would make an HTTP request here

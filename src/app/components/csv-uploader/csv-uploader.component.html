@@ -12,35 +12,65 @@
       [disabled]="isProcessing">
 
     
-  <!-- Update the checkbox section -->
-  <div *ngIf="selectedFile" style="margin-bottom: 15px;">
-    <div style="margin-bottom: 10px;">
-      <label style="display: flex; align-items: center; font-size: 14px; cursor: pointer;">
+  <!-- Options section - shown when file is selected -->
+  <div *ngIf="selectedFile" class="options-section">
+    <!-- Header checkbox -->
+    <div class="option-item">
+      <label class="option-label">
         <input 
           type="checkbox" 
           [(ngModel)]="hasHeader" 
           (change)="onHeaderCheckboxChange()" 
           [disabled]="isProcessing"
-          style="margin-right: 8px;"> 
+          class="option-checkbox">  
         File has a header line
       </label>
     </div>
 
      
-    <div style="margin-bottom: 10px;">
-      <label style="display: flex; align-items: center; font-size: 14px; cursor: pointer;">
+    <!-- Skip empty lines checkbox -->
+    <div class="option-item">
+      <label class="option-label">
         <input 
           type="checkbox" 
           [(ngModel)]="skipEmptyLines" 
           (change)="onSkipEmptyLinesChange()" 
           [disabled]="isProcessing"
-          style="margin-right: 8px;"> 
+          class="option-checkbox"> 
         Skip empty lines
       </label>
     </div>
-  
 
-    
+    <!-- Delimiter selection dropdown -->
+    <div class="option-item">
+      <label class="option-label">
+        <span class="option-text">Delimiter:</span>
+        <select 
+          [(ngModel)]="selectedDelimiter" 
+          (change)="onDelimiterChange()" 
+          [disabled]="isProcessing"
+          class="delimiter-select">
+          <option *ngFor="let option of delimiterOptions" [value]="option.value">
+            {{option.label}}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Double quote wrap checkbox -->
+    <div class="option-item">
+      <label class="option-label">
+        <input 
+          type="checkbox" 
+          [(ngModel)]="doubleQuoteWrap" 
+          (change)="onDoubleQuoteWrapChange()" 
+          [disabled]="isProcessing"
+          class="option-checkbox"> 
+        Double Quote Wrap
+      </label>
+    </div>
+  
+  
     <!-- Cancel Button - shown when file is selected -->
     <button 
       *ngIf="selectedFile && !isProcessing" 

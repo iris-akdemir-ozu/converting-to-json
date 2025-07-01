@@ -9,4 +9,49 @@ h3 {
 
 .table {
   min-width: 600px;
+  
+  thead {
+    background-color: #f8f9fa; // Default gray header
+    
+    &.no-header {
+      background-color: white; // White background when no header
+    }
+    
+    th {
+      background-color: #f8f9fa; // Default gray header cells
+      font-weight: bold;
+      border-bottom: 2px solid #dee2e6;
+      
+      &.no-header-cell {
+        background-color: white; // White background for header cells when no header
+        font-weight: normal; // Normal font weight when treating as data
+        border-bottom: 1px solid #dee2e6; // Thinner border like regular rows
+      }
+    }
+  }
+  
+  tbody {
+    tr {
+      &:nth-child(even) {
+        background-color: #f8f9fa; // Zebra striping for better readability
+      }
+      
+      &:hover {
+        background-color: #e9ecef; // Hover effect
+      }
+    }
+    
+    td {
+      border-bottom: 1px solid #dee2e6;
+      padding: 8px 12px;
+      vertical-align: top;
+    }
+  }
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  font-style: italic;
 }
