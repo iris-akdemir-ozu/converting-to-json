@@ -14,7 +14,8 @@ export class CsvUploaderComponent {
   // Track selected file and upload state
   selectedFile: File | null = null
   isProcessing = false
-  hasHeader: boolean = true // default to true
+  hasHeader = true // default to true
+  skipEmptyLines = true // default to true (skip empty lines)
 
   /**
    * Handles file selection and conversion
@@ -52,11 +53,10 @@ export class CsvUploaderComponent {
     if (fileInput) {
       fileInput.value = ""
     }
-    
+
     // Emit clear event to parent component
     this.onFileClear.emit()
   }
-  
 
   /**
    * Converts CSV file to JSON format
@@ -93,35 +93,55 @@ export class CsvUploaderComponent {
    * @returns Object with properties and result arrays
    */
   private parseCsvToJson(csvContent: string): any {
-    const lines = csvContent.split(/[\r\n]+/).filter((line) => line.trim() !== "")
+    const allLines = csvContent.split(/[\r\n]+/)
 
-    if (lines.length === 0) {
+    if (allLines.length === 0) {
       throw new Error("CSV file is empty")
     }
 
     let headers: string[]
-    let dataStartIndex = 1
+    let dataLines: string[] = []
+
+    // First, determine headers
     if (this.hasHeader) {
-      headers = lines[0].split(",").map((header) => header.trim().replace(/"/g, ""))
+      headers = allLines[0].split(",").map((header) => header.trim().replace(/"/g, ""))
+      dataLines = allLines.slice(1)
     } else {
-      // Generate generic column names based on the first row's number of columns
-      headers = lines[0].split(",").map((_, idx) => `column${idx + 1}`)
-      dataStartIndex = 0
+      // Generate generic column names based on the first non-empty row's number of columns
+      const firstDataRow = allLines.find((line) => line.trim() !== "")
+      if (!firstDataRow) {
+        throw new Error("No data found in CSV file")
+      }
+      headers = firstDataRow.split(",").map((_, idx) => `column${idx + 1}`)
+      dataLines = allLines
     }
 
-
-    // Convert remaining lines to JSON objects
+    // Convert data lines to JSON objects
     const jsonArray: any[] = []
 
-    for (let i = dataStartIndex; i < lines.length; i++) {
-      const values = lines[i].split(",").map((value) => value.trim().replace(/"/g, ""))
+    for (const line of dataLines) {
+      // Check if we should skip this line
+      if (this.skipEmptyLines && this.isEmptyRow(line)) {
+        continue // Skip this row
+      }
 
-      if (values.length === headers.length) {
-        const obj: any = {}
-        headers.forEach((header, index) => {
-          obj[header] = values[index] || ""
-        })
-        jsonArray.push(obj)
+      // If not skipping empty lines, or if the row has content, process it
+      if (!this.skipEmptyLines || !this.isEmptyRow(line)) {
+        const values = line.split(",").map((value) => value.trim().replace(/"/g, ""))
+
+        // Ensure we have the right number of columns (pad with empty strings if needed)
+        while (values.length < headers.length) {
+          values.push("")
+        }
+
+        // Only include rows that have the expected number of columns (or fewer)
+        if (values.length >= headers.length) {
+          const obj: any = {}
+          headers.forEach((header, index) => {
+            obj[header] = values[index] || ""
+          })
+          jsonArray.push(obj)
+        }
       }
     }
 
@@ -131,11 +151,30 @@ export class CsvUploaderComponent {
     }
   }
 
+  /**
+   * Helper method to check if a row is empty
+   * @param line - The CSV line to check
+   * @returns true if the row is empty or contains only commas/whitespace
+   */
+  private isEmptyRow(line: string): boolean {
+    // tüm virgülleri/spaceleri sildikten sonra satır tamamen boşsa true döndürüyor
+    const cleanedLine = line.replace(/[\s,]/g, "")
+    return cleanedLine === ""
+  }
+
   // Called when the header checkbox is toggled
   onHeaderCheckboxChange(): void {
     if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true;
-      this.convertCsvToJson(this.selectedFile);
+      this.isProcessing = true
+      this.convertCsvToJson(this.selectedFile)
+    }
+  }
+
+  // Called when the skip empty lines checkbox is toggled
+  onSkipEmptyLinesChange(): void {
+    if (this.selectedFile && !this.isProcessing) {
+      this.isProcessing = true
+      this.convertCsvToJson(this.selectedFile)
     }
   }
 }
