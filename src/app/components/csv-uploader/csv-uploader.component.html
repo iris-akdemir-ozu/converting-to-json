@@ -41,10 +41,10 @@
       </label>
     </div>
 
-    <!-- Delimiter selection dropdown -->
+    <!-- Value Delimiter selection dropdown -->
     <div class="option-item">
       <label class="option-label">
-        <span class="option-text">Delimiter:</span>
+        <span class="option-text">Value Delimiter:</span>
         <select 
           [(ngModel)]="selectedDelimiter" 
           (change)="onDelimiterChange()" 
@@ -56,6 +56,51 @@
         </select>
       </label>
     </div>
+
+    <!-- Row Delimiter selection dropdown -->
+    <div class="option-item">
+      <label class="option-label">
+        <span class="option-text">Row Delimiter:</span>
+        <select 
+          [(ngModel)]="selectedRowDelimiter" 
+          (change)="onRowDelimiterChange()" 
+          [disabled]="isProcessing"
+          class="delimiter-select">
+          <option *ngFor="let option of rowDelimiterOptions" [value]="option.value">
+            {{option.label}}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Row Prefix/Suffix inputs - always shown for maximum flexibility -->
+      
+      <div class="option-item">
+        <label class="option-label">
+          <span class="option-text">Row Prefix:</span>
+          <input 
+            type="text" 
+            [(ngModel)]="rowPrefix" 
+            (input)="onRowPrefixChange()" 
+            [disabled]="isProcessing"
+            class="prefix-suffix-input"
+            placeholder="Enter start symbol (e.g., [, {, <, START:)">
+        </label>
+      </div>
+      
+      <div class="option-item">
+        <label class="option-label">
+          <span class="option-text">Row Suffix:</span>
+          <input 
+            type="text" 
+            [(ngModel)]="rowSuffix" 
+            (input)="onRowSuffixChange()" 
+            [disabled]="isProcessing"
+            class="prefix-suffix-input"
+            placeholder="Enter end symbol (e.g., ], }, >, :END)">
+        </label>
+      </div>
+
 
     <!-- Double quote wrap checkbox -->
     <div class="option-item">

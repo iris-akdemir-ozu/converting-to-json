@@ -6,6 +6,9 @@ interface CsvOptions {
   skipEmptyLines: boolean
   selectedDelimiter: string
   doubleQuoteWrap: boolean
+  selectedRowDelimiter: string
+  rowPrefix: string
+  rowSuffix: string
 }
 
 @Component({
@@ -27,6 +30,9 @@ export class CsvUploaderComponent {
   skipEmptyLines = true // default to true (skip empty lines)
   selectedDelimiter = "," 
   doubleQuoteWrap = true
+  selectedRowDelimiter = "newline" // default to newline
+  rowPrefix = ""
+  rowSuffix = ""
 
   // Delimiter options for the dropdown
   delimiterOptions = [
@@ -36,6 +42,22 @@ export class CsvUploaderComponent {
     { value: ":", label: "Colon (:)" },
     { value: "\t", label: "Tab" },
   ]
+
+  // Row delimiter options for the dropdown
+  rowDelimiterOptions = [
+    { value: "newline", label: "Newline (\\n)" },
+    { value: ",", label: "Comma (,)" },
+    { value: ";", label: "Semicolon (;)" },
+    { value: "|", label: "Pipe (|)" },
+    { value: ":", label: "Colon (:)" },
+    { value: "\t", label: "Tab" },
+    { value: "/", label: "Slash (/)" },
+    { value: "#", label: "Hash (#)" },
+  ]
+
+  get hasPrefixAndSuffix(): boolean {
+    return this.rowPrefix.trim() !== "" && this.rowSuffix.trim() !== ""
+  }
 
   /**
    * Handles file selection and conversion
@@ -87,6 +109,9 @@ export class CsvUploaderComponent {
       skipEmptyLines: this.skipEmptyLines,
       selectedDelimiter: this.selectedDelimiter,
       doubleQuoteWrap: this.doubleQuoteWrap,
+      selectedRowDelimiter: this.selectedRowDelimiter,
+      rowPrefix: this.rowPrefix,
+      rowSuffix: this.rowSuffix,
     }
     this.onOptionsChange.emit(options)
   }
@@ -127,10 +152,40 @@ export class CsvUploaderComponent {
    * @returns Object with properties and result arrays
    */
   private parseCsvToJson(csvContent: string): any {
-    const allLines = csvContent.split(/[\r\n]+/)
+    let allLines: string[]
+
+    // Priority 1: Use prefix/suffix if both are provided
+    if (this.hasPrefixAndSuffix) {
+      console.log(`Using prefix/suffix parsing: "${this.rowPrefix}" ... "${this.rowSuffix}"`)
+      const prefixSuffixPattern = new RegExp(
+        `${this.escapeRegExp(this.rowPrefix)}(.*?)${this.escapeRegExp(this.rowSuffix)}`,
+        "gs", // Added 's' flag to make . match newlines as well
+      )
+      const matches = csvContent.match(prefixSuffixPattern)
+      if (matches) {
+        allLines = matches.map((match) => {
+          // Remove prefix and suffix from each match
+          return match.substring(this.rowPrefix.length, match.length - this.rowSuffix.length)
+        })
+        console.log(`Found ${allLines.length} rows using prefix/suffix`)
+      } else {
+        console.log("No matches found with prefix/suffix pattern")
+        allLines = []
+      }
+    }
+    // Priority 2: Use row delimiter if no prefix/suffix
+    else if (this.selectedRowDelimiter === "newline") {
+      console.log("Using newline row delimiter")
+      allLines = csvContent.split(/[\r\n]+/)
+    } else {
+      console.log(`Using custom row delimiter: "${this.selectedRowDelimiter}"`)
+      // Handle custom row delimiter
+      const rowDelimiter = this.selectedRowDelimiter === "\t" ? "\t" : this.selectedRowDelimiter
+      allLines = csvContent.split(rowDelimiter)
+    }
 
     if (allLines.length === 0) {
-      throw new Error("CSV file is empty")
+      throw new Error("No data found in file with current parsing settings")
     }
 
     let headers: string[]
@@ -273,6 +328,14 @@ export class CsvUploaderComponent {
       this.convertCsvToJson(this.selectedFile)
     }
   }
+  /**
+   * Escapes special regex characters in a string
+   * @param string - String to escape
+   * @returns Escaped string
+   */
+  private escapeRegExp(string: string): string {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  }
 
   // Called when the skip empty lines checkbox is toggled
   onSkipEmptyLinesChange(): void {
@@ -284,6 +347,29 @@ export class CsvUploaderComponent {
 
   // Called when the delimiter selection changes
   onDelimiterChange(): void {
+    if (this.selectedFile && !this.isProcessing) {
+      this.isProcessing = true
+      this.convertCsvToJson(this.selectedFile)
+    }
+  }
+  // Called when the row delimiter selection changes
+  onRowDelimiterChange(): void {
+    if (this.selectedFile && !this.isProcessing) {
+      this.isProcessing = true
+      this.convertCsvToJson(this.selectedFile)
+    }
+  }
+
+  // Called when row prefix changes
+  onRowPrefixChange(): void {
+    if (this.selectedFile && !this.isProcessing) {
+      this.isProcessing = true
+      this.convertCsvToJson(this.selectedFile)
+    }
+  }
+
+  // Called when row suffix changes
+  onRowSuffixChange(): void {
     if (this.selectedFile && !this.isProcessing) {
       this.isProcessing = true
       this.convertCsvToJson(this.selectedFile)

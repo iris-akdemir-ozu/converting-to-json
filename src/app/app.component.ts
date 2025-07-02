@@ -11,6 +11,9 @@ interface CsvOptions {
   skipEmptyLines: boolean
   selectedDelimiter: string
   doubleQuoteWrap: boolean
+  selectedRowDelimiter: string
+  rowPrefix: string
+  rowSuffix: string
 }
 @Component({
   selector: "app-root",
@@ -36,6 +39,9 @@ export class AppComponent {
     skipEmptyLines: true,
     selectedDelimiter: ",",
     doubleQuoteWrap: true,
+    selectedRowDelimiter: "newline",
+    rowPrefix: "",
+    rowSuffix: "",
   }
 
 
