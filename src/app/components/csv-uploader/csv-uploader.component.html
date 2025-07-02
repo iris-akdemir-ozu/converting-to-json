@@ -73,6 +73,38 @@
       </label>
     </div>
 
+    <!-- Quote Handling selection dropdown -->
+    <div class="option-item">
+      <label class="option-label">
+        <span class="option-text">Quote Handling:</span>
+        <select 
+          [(ngModel)]="selectedQuoteOption" 
+          (change)="onQuoteOptionChange()" 
+          [disabled]="isProcessing"
+          class="delimiter-select">
+          <option *ngFor="let option of quoteOptions" [value]="option.value">
+            {{option.label}}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Encoding selection dropdown -->
+    <div class="option-item">
+      <label class="option-label">
+        <span class="option-text">File Encoding:</span>
+        <select 
+          [(ngModel)]="selectedEncoding" 
+          (change)="onEncodingChange()" 
+          [disabled]="isProcessing"
+          class="delimiter-select">
+          <option *ngFor="let option of encodingOptions" [value]="option.value">
+            {{option.label}}
+          </option>
+        </select>
+      </label>
+    </div>
+
     <!-- Row Prefix/Suffix inputs - always shown for maximum flexibility -->
       
       <div class="option-item">
@@ -83,8 +115,7 @@
             [(ngModel)]="rowPrefix" 
             (input)="onRowPrefixChange()" 
             [disabled]="isProcessing"
-            class="prefix-suffix-input"
-            placeholder="Enter start symbol (e.g., [, {, <, START:)">
+            class="prefix-suffix-input">
         </label>
       </div>
       
@@ -96,14 +127,13 @@
             [(ngModel)]="rowSuffix" 
             (input)="onRowSuffixChange()" 
             [disabled]="isProcessing"
-            class="prefix-suffix-input"
-            placeholder="Enter end symbol (e.g., ], }, >, :END)">
+            class="prefix-suffix-input">
         </label>
       </div>
 
 
     <!-- Double quote wrap checkbox -->
-    <div class="option-item">
+    <div class="option-item" style="display: none;">
       <label class="option-label">
         <input 
           type="checkbox" 

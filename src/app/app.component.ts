@@ -14,6 +14,8 @@ interface CsvOptions {
   selectedRowDelimiter: string
   rowPrefix: string
   rowSuffix: string
+  selectedEncoding: string
+  selectedQuoteOption: string
 }
 @Component({
   selector: "app-root",
@@ -42,6 +44,8 @@ export class AppComponent {
     selectedRowDelimiter: "newline",
     rowPrefix: "",
     rowSuffix: "",
+    selectedEncoding: "utf-8",
+    selectedQuoteOption: "none",
   }
 
 

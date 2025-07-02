@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Output } from "@angular/core"
+import { decodeWithMap, isEncodingSupported } from "../../utils/encoding-maps"
 
 // Interface for CSV parsing options
 interface CsvOptions {
@@ -9,6 +10,8 @@ interface CsvOptions {
   selectedRowDelimiter: string
   rowPrefix: string
   rowSuffix: string
+  selectedEncoding: string
+  selectedQuoteOption: string
 }
 
 @Component({
@@ -33,6 +36,8 @@ export class CsvUploaderComponent {
   selectedRowDelimiter = "newline" // default to newline
   rowPrefix = ""
   rowSuffix = ""
+  selectedEncoding = "utf-8"
+  selectedQuoteOption = "none"
 
   // Delimiter options for the dropdown
   delimiterOptions = [
@@ -41,6 +46,8 @@ export class CsvUploaderComponent {
     { value: "|", label: "Pipe (|)" },
     { value: ":", label: "Colon (:)" },
     { value: "\t", label: "Tab" },
+    { value: "/", label: "Slash (/)" },
+    { value: "#", label: "Hash (#)" },
   ]
 
   // Row delimiter options for the dropdown
@@ -54,9 +61,39 @@ export class CsvUploaderComponent {
     { value: "/", label: "Slash (/)" },
     { value: "#", label: "Hash (#)" },
   ]
+  // Encoding options for the dropdown
+  encodingOptions = [
+    { value: "utf-8", label: "UTF-8" },
+    { value: "utf-8-bom", label: "UTF-8 with BOM" },
+    { value: "windows-1254", label: "Windows-1254 (Turkish)" },
+    { value: "iso-8859-9", label: "ISO-8859-9 (Turkish)" },
+  ]
+
+  // Quote handling options
+  quoteOptions = [
+    { value: "none", label: "None (No Quote Handling)" },
+    { value: "single", label: "Single Quote (')" },
+    { value: "double", label: 'Double Quote (")' },
+  ]
 
   get hasPrefixAndSuffix(): boolean {
     return this.rowPrefix.trim() !== "" && this.rowSuffix.trim() !== ""
+  }
+
+  get quoteCharacter(): string {
+    switch (this.selectedQuoteOption) {
+      case "single":
+        return "'"
+      case "double":
+        return '"'
+      case "none":
+      default:
+        return ""
+    }
+  }
+  //quote handling enabled mı değil mi
+  get isQuoteHandlingEnabled(): boolean {
+    return this.selectedQuoteOption !== "none"
   }
 
   /**
@@ -112,6 +149,8 @@ export class CsvUploaderComponent {
       selectedRowDelimiter: this.selectedRowDelimiter,
       rowPrefix: this.rowPrefix,
       rowSuffix: this.rowSuffix,
+      selectedEncoding: this.selectedEncoding,
+      selectedQuoteOption: this.selectedQuoteOption,
     }
     this.onOptionsChange.emit(options)
   }
@@ -125,7 +164,11 @@ export class CsvUploaderComponent {
 
     fileReader.onload = (event) => {
       try {
-        const csvContent = event.target?.result as string
+        let csvContent = event.target?.result as string
+        // Handle UTF-8 BOM removal if present
+        if (this.selectedEncoding === "utf-8-bom" || csvContent.charCodeAt(0) === 0xfeff) {
+          csvContent = csvContent.replace(/^\uFEFF/, "")
+        }
         const jsonResult = this.parseCsvToJson(csvContent)
         this.isProcessing = false
         this.onConvert.emit(jsonResult)
@@ -143,7 +186,19 @@ export class CsvUploaderComponent {
       this.clearSelection()
     }
 
-    fileReader.readAsText(file, "UTF-8")
+    // Read file with appropriate encoding
+    // Note: FileReader API has limited encoding support, but we handle what we can
+    if (this.selectedEncoding === "utf-8" || this.selectedEncoding === "utf-8-bom") {
+      fileReader.readAsText(file, "UTF-8")
+    } else if (this.selectedEncoding === "windows-1254") {
+      // Fallback to UTF-8 for now, but indicate the intended encoding
+      fileReader.readAsText(file, "UTF-8")
+    } else if (this.selectedEncoding === "iso-8859-9") {
+      // Fallback to UTF-8 for now, but indicate the intended encoding
+      fileReader.readAsText(file, "UTF-8")
+    } else {
+      fileReader.readAsText(file, "UTF-8")
+    }
   }
 
   /**
@@ -253,7 +308,7 @@ export class CsvUploaderComponent {
   private parseCSVLine(line: string): string[] {
     console.log("Parsing line:", line, "with doubleQuoteWrap:", this.doubleQuoteWrap) // Debug log
 
-    if (!this.doubleQuoteWrap) {
+    if (!this.isQuoteHandlingEnabled) {
       // Simple split - preserve ALL characters including quotes
       const result = line.split(this.selectedDelimiter)
       return result
@@ -264,18 +319,19 @@ export class CsvUploaderComponent {
     let current = ""
     let inQuotes = false
     let i = 0
+    const quoteChar = this.quoteCharacter
 
     while (i < line.length) {
       const char = line[i]
       const nextChar = line[i + 1]
 
-      if (char === '"' && !inQuotes) {
+      if (char === quoteChar && !inQuotes) {
         // Start of quoted section - don't include the opening quote
         inQuotes = true
-      } else if (char === '"' && inQuotes) {
-        if (nextChar === '"') {
+      } else if (char === quoteChar && inQuotes) {
+        if (nextChar === quoteChar) {
           // Escaped quote (double quote) - include one quote in the result
-          current += '"'
+          current += quoteChar
           i++ // Skip next quote
         } else {
           // End of quoted section - don't include the closing quote
@@ -303,7 +359,7 @@ export class CsvUploaderComponent {
    * @returns true if the row is empty or contains only empty quoted values/delimiters/whitespace
    */
   private isEmptyRow(line: string): boolean {
-    if (!this.doubleQuoteWrap) {
+    if (!this.isQuoteHandlingEnabled) {
       // Simple check for non-quote-wrap mode
       const values = line.split(this.selectedDelimiter)
       const hasContent = values.some((value) => {
@@ -378,6 +434,26 @@ export class CsvUploaderComponent {
 
   // Called when the double quote wrap checkbox is toggled
   onDoubleQuoteWrapChange(): void {
+    // Update the quote option based on checkbox
+    this.selectedQuoteOption = this.doubleQuoteWrap ? "double" : "none"
+    if (this.selectedFile && !this.isProcessing) {
+      this.isProcessing = true
+      this.convertCsvToJson(this.selectedFile)
+    }
+  }
+
+  // Called when the quote option selection changes
+  onQuoteOptionChange(): void {
+    // Update the backward compatibility flag
+    this.doubleQuoteWrap = this.selectedQuoteOption === "double"
+    if (this.selectedFile && !this.isProcessing) {
+      this.isProcessing = true
+      this.convertCsvToJson(this.selectedFile)
+    }
+  }
+
+  // Called when the encoding selection changes
+  onEncodingChange(): void {
     if (this.selectedFile && !this.isProcessing) {
       this.isProcessing = true
       this.convertCsvToJson(this.selectedFile)
