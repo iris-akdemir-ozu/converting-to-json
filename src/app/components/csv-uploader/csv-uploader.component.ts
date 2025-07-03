@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output } from "@angular/core"
-import { decodeWithMap, isEncodingSupported } from "../../utils/encoding-maps"
+import { convertToUTF8 } from "src/app/utils/encoding-maps"
 
 // Interface for CSV parsing options
 interface CsvOptions {
@@ -164,11 +164,12 @@ export class CsvUploaderComponent {
 
     fileReader.onload = (event) => {
       try {
-        let csvContent = event.target?.result as string
-        // Handle UTF-8 BOM removal if present
-        if (this.selectedEncoding === "utf-8-bom" || csvContent.charCodeAt(0) === 0xfeff) {
-          csvContent = csvContent.replace(/^\uFEFF/, "")
-        }
+        const arrayBuffer = event.target?.result as ArrayBuffer
+
+        // Use the proven Turkish encoding converter
+        const csvContent = convertToUTF8(arrayBuffer, this.selectedEncoding)
+
+        console.log(`Converted from ${this.selectedEncoding} to UTF-8:`, csvContent.substring(0, 200))
         const jsonResult = this.parseCsvToJson(csvContent)
         this.isProcessing = false
         this.onConvert.emit(jsonResult)
@@ -186,19 +187,7 @@ export class CsvUploaderComponent {
       this.clearSelection()
     }
 
-    // Read file with appropriate encoding
-    // Note: FileReader API has limited encoding support, but we handle what we can
-    if (this.selectedEncoding === "utf-8" || this.selectedEncoding === "utf-8-bom") {
-      fileReader.readAsText(file, "UTF-8")
-    } else if (this.selectedEncoding === "windows-1254") {
-      // Fallback to UTF-8 for now, but indicate the intended encoding
-      fileReader.readAsText(file, "UTF-8")
-    } else if (this.selectedEncoding === "iso-8859-9") {
-      // Fallback to UTF-8 for now, but indicate the intended encoding
-      fileReader.readAsText(file, "UTF-8")
-    } else {
-      fileReader.readAsText(file, "UTF-8")
-    }
+    fileReader.readAsArrayBuffer(file)
   }
 
   /**
