@@ -12,6 +12,7 @@ interface CsvOptions {
   rowSuffix: string
   selectedEncoding: string
   selectedQuoteOption: string
+  trimWhitespace: boolean
 }
 
 @Component({
@@ -31,13 +32,14 @@ export class CsvUploaderComponent {
   isProcessing = false
   hasHeader = true // default to true
   skipEmptyLines = true // default to true (skip empty lines)
-  selectedDelimiter = "," 
+  selectedDelimiter = ","
   doubleQuoteWrap = true
   selectedRowDelimiter = "newline" // default to newline
   rowPrefix = ""
   rowSuffix = ""
   selectedEncoding = "utf-8"
   selectedQuoteOption = "none"
+  trimWhitespace = true
 
   // Delimiter options for the dropdown
   delimiterOptions = [
@@ -53,6 +55,8 @@ export class CsvUploaderComponent {
   // Row delimiter options for the dropdown
   rowDelimiterOptions = [
     { value: "newline", label: "Newline (\\n)" },
+    { value: "carriage-return", label: "Carriage Return(\\r)"},
+    {value: "crlf", label: "Carriage Return + Newline (\\r\\n)"},
     { value: ",", label: "Comma (,)" },
     { value: ";", label: "Semicolon (;)" },
     { value: "|", label: "Pipe (|)" },
@@ -151,6 +155,7 @@ export class CsvUploaderComponent {
       rowSuffix: this.rowSuffix,
       selectedEncoding: this.selectedEncoding,
       selectedQuoteOption: this.selectedQuoteOption,
+      trimWhitespace: this.trimWhitespace,
     }
     this.onOptionsChange.emit(options)
   }
@@ -220,7 +225,13 @@ export class CsvUploaderComponent {
     // Priority 2: Use row delimiter if no prefix/suffix
     else if (this.selectedRowDelimiter === "newline") {
       console.log("Using newline row delimiter")
-      allLines = csvContent.split(/[\r\n]+/)
+      allLines = csvContent.split(/\n/)
+    } else if (this.selectedRowDelimiter === "carriage-return") {
+      console.log("Using carriage return row delimiter")
+      allLines = csvContent.split(/\r/)
+    } else if (this.selectedRowDelimiter === "crlf") {
+      console.log("Using carriage return + newline row delimiter")
+      allLines = csvContent.split(/\r\n/)
     } else {
       console.log(`Using custom row delimiter: "${this.selectedRowDelimiter}"`)
       // Handle custom row delimiter
@@ -240,6 +251,9 @@ export class CsvUploaderComponent {
       headers = this.parseCSVLine(allLines[0])
       console.log("Parsed headers:", headers) // Debug log
       dataLines = allLines.slice(1)
+      if (this.trimWhitespace) {
+        headers = headers.map(header => header.trim())
+      }
     } else {
       // Generate generic column names based on the first non-empty row's number of columns
       const firstDataRow = allLines.find((line) => line.trim() !== "")
@@ -277,7 +291,12 @@ export class CsvUploaderComponent {
       if (values.length >= headers.length) {
         const obj: any = {}
         headers.forEach((header, index) => {
-          obj[header] = values[index] || ""
+          let value = values[index] || ""
+          // Apply trim whitespace if enabled
+          if (this.trimWhitespace) {
+            value = value.trim()
+          }
+         obj[header] = value
         })
         jsonArray.push(obj)
       }
@@ -443,6 +462,13 @@ export class CsvUploaderComponent {
 
   // Called when the encoding selection changes
   onEncodingChange(): void {
+    if (this.selectedFile && !this.isProcessing) {
+      this.isProcessing = true
+      this.convertCsvToJson(this.selectedFile)
+    }
+  }
+
+  onTrimWhitespaceChange(): void {
     if (this.selectedFile && !this.isProcessing) {
       this.isProcessing = true
       this.convertCsvToJson(this.selectedFile)

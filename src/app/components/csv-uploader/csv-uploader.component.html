@@ -72,6 +72,18 @@
         </select>
       </label>
     </div>
+    <!-- Trim whitespace checkbox -->
+  <div class="option-item">
+    <label class="option-label">
+      <input 
+        type="checkbox" 
+        [(ngModel)]="trimWhitespace" 
+        (change)="onTrimWhitespaceChange()" 
+        [disabled]="isProcessing"
+        class="option-checkbox"> 
+      Trim whitespace from values
+    </label>
+  </div>
 
     <!-- Quote Handling selection dropdown -->
     <div class="option-item">
@@ -155,6 +167,8 @@
       ✕
     </button>
   </div>
+
+
   
   <!-- File Status Display -->
   <div class="file-status">

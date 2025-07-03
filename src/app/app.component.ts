@@ -16,6 +16,7 @@ interface CsvOptions {
   rowSuffix: string
   selectedEncoding: string
   selectedQuoteOption: string
+  trimWhitespace: boolean
 }
 @Component({
   selector: "app-root",
@@ -46,6 +47,7 @@ export class AppComponent {
     rowSuffix: "",
     selectedEncoding: "utf-8",
     selectedQuoteOption: "none",
+    trimWhitespace: true,
   }
 
 
