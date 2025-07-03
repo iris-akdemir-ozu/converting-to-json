@@ -26,4 +26,12 @@ export class DataTableComponent {
       return Object.values(item).some((value) => String(value).toLowerCase().includes(this.searchTerm.toLowerCase()))
     })
   }
+
+  /**
+   * Get formatted JSON string for debugging
+   * @returns Formatted JSON string
+   */
+  getFormattedJson(): string {
+    return JSON.stringify(this.filteredData, null, 2)
+  }
 }
