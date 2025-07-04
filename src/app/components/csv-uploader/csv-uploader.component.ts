@@ -1,25 +1,12 @@
-import { Component, EventEmitter, Output } from "@angular/core"
-import { convertToUTF8 } from "src/app/utils/encoding-maps"
-
-// Interface for CSV parsing options
-interface CsvOptions {
-  hasHeader: boolean
-  skipEmptyLines: boolean
-  selectedDelimiter: string
-  doubleQuoteWrap: boolean
-  selectedRowDelimiter: string
-  rowPrefix: string
-  rowSuffix: string
-  selectedEncoding: string
-  selectedQuoteOption: string
-  trimWhitespace: boolean
-}
+import { Component, EventEmitter, Output } from "@angular/core";
+import { CsvConverterService, CsvOptions } from 'src/app/services/csv-converter.service';
 
 @Component({
   selector: "app-csv-uploader",
   templateUrl: "./csv-uploader.component.html",
   styleUrls: ["./csv-uploader.component.scss"],
 })
+
 export class CsvUploaderComponent {
   // Output events to communicate with parent component
   @Output() onConvert = new EventEmitter<any>()
@@ -40,6 +27,8 @@ export class CsvUploaderComponent {
   selectedEncoding = "utf-8"
   selectedQuoteOption = "none"
   trimWhitespace = true
+
+  constructor(private csvService: CsvConverterService) {}
 
   // Delimiter options for the dropdown
   delimiterOptions = [
@@ -104,24 +93,40 @@ export class CsvUploaderComponent {
    * Handles file selection and conversion
    * @param event - File input change event
    */
-  onFileSelect(event: any): void {
+  async onFileSelect(event: any): Promise<void> {
     const files = event.target.files
-    const fileTypes = ["csv"] // Only accept CSV files
+    // const fileTypes = ["csv"] // Only accept CSV files
 
     if (files && files.length > 0) {
       const file = files[0]
-      const extension = file.name.split(".").pop()?.toLowerCase()
-      const isValidFile = extension && fileTypes.includes(extension)
-
-      if (isValidFile) {
-        this.selectedFile = file
-        this.isProcessing = true
-        this.convertCsvToJson(file)
-      } else {
-        this.onError.emit("Please select a valid file!")
-        this.clearSelection()
+      this.selectedFile = file
+      this.isProcessing = true
+      try {
+        const jsonResult = await this.csvService.convertFileToJson(file, this.getOptions());
+        this.isProcessing = false;
+        this.onConvert.emit(jsonResult);
+        this.onOptionsChange.emit(this.getOptions());
+      } catch (error) {
+        this.isProcessing = false;
+        this.onError.emit("Error reading file: " + error);
+        this.clearSelection();
       }
     }
+  }
+
+  getOptions(): CsvOptions {
+    return {
+      hasHeader: this.hasHeader,
+      skipEmptyLines: this.skipEmptyLines,
+      selectedDelimiter: this.selectedDelimiter,
+      doubleQuoteWrap: this.doubleQuoteWrap,
+      selectedRowDelimiter: this.selectedRowDelimiter,
+      rowPrefix: this.rowPrefix,
+      rowSuffix: this.rowSuffix,
+      selectedEncoding: this.selectedEncoding,
+      selectedQuoteOption: this.selectedQuoteOption,
+      trimWhitespace: this.trimWhitespace,
+    };
   }
 
   /**
@@ -159,160 +164,6 @@ export class CsvUploaderComponent {
     }
     this.onOptionsChange.emit(options)
   }
-
-  /**
-   * Converts CSV file to JSON format
-   * @param file - The CSV file to convert
-   */
-  private convertCsvToJson(file: File): void {
-    const fileReader = new FileReader()
-
-    fileReader.onload = (event) => {
-      try {
-        const arrayBuffer = event.target?.result as ArrayBuffer
-
-        // Use the proven Turkish encoding converter
-        const csvContent = convertToUTF8(arrayBuffer, this.selectedEncoding)
-
-        console.log(`Converted from ${this.selectedEncoding} to UTF-8:`, csvContent.substring(0, 200))
-        const jsonResult = this.parseCsvToJson(csvContent)
-        this.isProcessing = false
-        this.onConvert.emit(jsonResult)
-        this.emitOptions() // Emit current options after successful conversion
-      } catch (error) {
-        this.isProcessing = false
-        this.onError.emit("Error reading file: " + error)
-        this.clearSelection()
-      }
-    }
-
-    fileReader.onerror = () => {
-      this.isProcessing = false
-      this.onError.emit("Error reading file")
-      this.clearSelection()
-    }
-
-    fileReader.readAsArrayBuffer(file)
-  }
-
-  /**
-   * Parses CSV content and converts to JSON
-   * @param csvContent - Raw CSV content as string
-   * @returns Object with properties and result arrays
-   */
-  private parseCsvToJson(csvContent: string): any {
-    let allLines: string[]
-
-    // Priority 1: Use prefix/suffix if both are provided
-    if (this.hasPrefixAndSuffix) {
-      console.log(`Using prefix/suffix parsing: "${this.rowPrefix}" ... "${this.rowSuffix}"`)
-      const prefixSuffixPattern = new RegExp(
-        `${this.escapeRegExp(this.rowPrefix)}(.*?)${this.escapeRegExp(this.rowSuffix)}`,
-        "gs", // Added 's' flag to make . match newlines as well
-      )
-      const matches = csvContent.match(prefixSuffixPattern)
-      if (matches) {
-        allLines = matches.map((match) => {
-          // Remove prefix and suffix from each match
-          return match.substring(this.rowPrefix.length, match.length - this.rowSuffix.length)
-        })
-        console.log(`Found ${allLines.length} rows using prefix/suffix`)
-      } else {
-        console.log("No matches found with prefix/suffix pattern")
-        allLines = []
-      }
-    }
-    // Priority 2: Use row delimiter if no prefix/suffix
-    else if (this.selectedRowDelimiter === "newline") {
-      console.log("Using newline row delimiter")
-      allLines = csvContent.split(/\n/)
-    } else if (this.selectedRowDelimiter === "carriage-return") {
-      console.log("Using carriage return row delimiter")
-      allLines = csvContent.split(/\r/)
-    } else if (this.selectedRowDelimiter === "crlf") {
-      console.log("Using carriage return + newline row delimiter")
-      allLines = csvContent.split(/\r\n/)
-    } else {
-      console.log(`Using custom row delimiter: "${this.selectedRowDelimiter}"`)
-      // Handle custom row delimiter
-      const rowDelimiter = this.selectedRowDelimiter === "\t" ? "\t" : this.selectedRowDelimiter
-      allLines = csvContent.split(rowDelimiter)
-    }
-
-    if (allLines.length === 0) {
-      throw new Error("No data found in file with current parsing settings")
-    }
-
-    let headers: string[]
-    let dataLines: string[] = []
-
-    // First, determine headers
-    if (this.hasHeader) {
-      headers = this.parseCSVLine(allLines[0])
-      console.log("Parsed headers:", headers) // Debug log
-      dataLines = allLines.slice(1)
-      if (this.trimWhitespace) {
-        headers = headers.map(header => header.trim())
-      }
-    } else {
-      // Generate generic column names based on the first non-empty row's number of columns
-      const firstDataRow = allLines.find((line) => line.trim() !== "")
-      if (!firstDataRow) {
-        throw new Error("No data found in CSV file")
-      }
-      const firstRowValues = this.parseCSVLine(firstDataRow)
-      headers = firstRowValues.map((_, idx) => `column${idx + 1}`)
-      dataLines = allLines
-    }
-
-    // Convert data lines to JSON objects
-    const jsonArray: any[] = []
-
-    for (const line of dataLines) {
-      // Skip completely blank lines first
-      if (line.trim() === "") {
-        continue
-      }
-
-      // Check if we should skip this line based on empty row detection
-      if (this.skipEmptyLines && this.isEmptyRow(line)) {
-        continue // Skip this row
-      }
-
-      // Process the row
-      const values = this.parseCSVLine(line)
-
-      // Ensure we have the right number of columns (pad with empty strings if needed)
-      while (values.length < headers.length) {
-        values.push("")
-      }
-
-      // Only include rows that have the expected number of columns (or fewer)
-      if (values.length >= headers.length) {
-        const obj: any = {}
-        headers.forEach((header, index) => {
-          let value = values[index] || ""
-          // Apply trim whitespace if enabled
-          if (this.trimWhitespace) {
-            value = value.trim()
-          }
-         obj[header] = value
-        })
-        jsonArray.push(obj)
-      }
-    }
-
-    return {
-      properties: headers,
-      result: jsonArray,
-    }
-  }
-
-  /**
-   * Parses a single CSV line, handling quoted values properly
-   * @param line - The CSV line to parse
-   * @returns Array of parsed values
-   */
   private parseCSVLine(line: string): string[] {
     console.log("Parsing line:", line, "with doubleQuoteWrap:", this.doubleQuoteWrap) // Debug log
 
@@ -361,117 +212,39 @@ export class CsvUploaderComponent {
     return result
   }
 
-  /**
-   * Helper method to check if a row is empty
-   * @param line - The CSV line to check
-   * @returns true if the row is empty or contains only empty quoted values/delimiters/whitespace
-   */
-  private isEmptyRow(line: string): boolean {
-    if (!this.isQuoteHandlingEnabled) {
-      // Simple check for non-quote-wrap mode
-      const values = line.split(this.selectedDelimiter)
-      const hasContent = values.some((value) => {
-        const trimmed = value.trim()
-        // Consider empty if it's empty, just quotes, or just whitespace
-        return trimmed !== "" && trimmed !== '""' && trimmed !== "''"
-      })
-      return !hasContent
-    } else {
-      // Parse the line using the same logic as data parsing for quote-wrap mode
-      const values = this.parseCSVLine(line)
-      // Check if all values are empty after parsing
-      const hasContent = values.some((value) => value.trim() !== "")
-      return !hasContent
-    }
-  }
 
-  // Called when the header checkbox is toggled
-  onHeaderCheckboxChange(): void {
+  private async processSelectedFile(): Promise<void> {
     if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
+      this.isProcessing = true;
+      try {
+        const jsonResult = await this.csvService.convertFileToJson(this.selectedFile, this.getOptions());
+        this.isProcessing = false;
+        this.onConvert.emit(jsonResult);
+        this.onOptionsChange.emit(this.getOptions());
+      } catch (error) {
+        this.isProcessing = false;
+        this.onError.emit("Error reading file: " + error);
+        this.clearSelection();
+      }
     }
   }
-  /**
-   * Escapes special regex characters in a string
-   * @param string - String to escape
-   * @returns Escaped string
-   */
-  private escapeRegExp(string: string): string {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  }
-
-  // Called when the skip empty lines checkbox is toggled
-  onSkipEmptyLinesChange(): void {
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
-  }
-
-  // Called when the delimiter selection changes
-  onDelimiterChange(): void {
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
-  }
-  // Called when the row delimiter selection changes
-  onRowDelimiterChange(): void {
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
-  }
-
-  // Called when row prefix changes
-  onRowPrefixChange(): void {
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
-  }
-
-  // Called when row suffix changes
-  onRowSuffixChange(): void {
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
-  }
-
-  // Called when the double quote wrap checkbox is toggled
+  
+  // Then, all event handlers become:
+  onHeaderCheckboxChange(): void { this.processSelectedFile(); }
+  onSkipEmptyLinesChange(): void { this.processSelectedFile(); }
+  onDelimiterChange(): void { this.processSelectedFile(); }
+  onRowDelimiterChange(): void { this.processSelectedFile(); }
+  onRowPrefixChange(): void { this.processSelectedFile(); }
+  onRowSuffixChange(): void { this.processSelectedFile(); }
   onDoubleQuoteWrapChange(): void {
-    // Update the quote option based on checkbox
-    this.selectedQuoteOption = this.doubleQuoteWrap ? "double" : "none"
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
+    this.selectedQuoteOption = this.doubleQuoteWrap ? "double" : "none";
+    this.processSelectedFile();
   }
-
-  // Called when the quote option selection changes
   onQuoteOptionChange(): void {
-    // Update the backward compatibility flag
-    this.doubleQuoteWrap = this.selectedQuoteOption === "double"
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
+    this.doubleQuoteWrap = this.selectedQuoteOption === "double";
+    this.processSelectedFile();
   }
-
-  // Called when the encoding selection changes
-  onEncodingChange(): void {
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
-  }
-
-  onTrimWhitespaceChange(): void {
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true
-      this.convertCsvToJson(this.selectedFile)
-    }
-  }
+  onEncodingChange(): void { this.processSelectedFile(); }
+  onTrimWhitespaceChange(): void { this.processSelectedFile(); }
+  
 }
