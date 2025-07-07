@@ -156,6 +156,16 @@
         Double Quote Wrap
       </label>
     </div>
+
+    <!-- Process Data Button - At the very end of all options -->
+    <div *ngIf="selectedFile && !isProcessing" class="process-button-container">
+      <button 
+        class="btn btn-primary process-btn"
+        (click)="processData()"
+        title="Process the file with current settings">
+        Process Data
+      </button>
+    </div>
   
   
     <!-- Cancel Button - shown when file is selected -->

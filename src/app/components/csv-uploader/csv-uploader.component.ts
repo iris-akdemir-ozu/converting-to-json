@@ -212,39 +212,73 @@ export class CsvUploaderComponent {
     return result
   }
 
+  
+  onHeaderCheckboxChange(): void {
+    this.emitOptions()
+  }
 
-  private async processSelectedFile(): Promise<void> {
-    if (this.selectedFile && !this.isProcessing) {
-      this.isProcessing = true;
-      try {
-        const jsonResult = await this.csvService.convertFileToJson(this.selectedFile, this.getOptions());
-        this.isProcessing = false;
-        this.onConvert.emit(jsonResult);
-        this.onOptionsChange.emit(this.getOptions());
-      } catch (error) {
-        this.isProcessing = false;
-        this.onError.emit("Error reading file: " + error);
-        this.clearSelection();
-      }
+  onSkipEmptyLinesChange(): void {
+    this.emitOptions()
+  }
+
+  onDelimiterChange(): void {
+    this.emitOptions()
+  }
+
+  onRowDelimiterChange(): void {
+    this.emitOptions()
+  }
+
+  onRowPrefixChange(): void {
+    this.emitOptions()
+  }
+
+  onRowSuffixChange(): void {
+    this.emitOptions()
+  }
+
+  onDoubleQuoteWrapChange(): void {
+    this.selectedQuoteOption = this.doubleQuoteWrap ? "double" : "none"
+    this.emitOptions()
+  }
+
+  onQuoteOptionChange(): void {
+    this.doubleQuoteWrap = this.selectedQuoteOption === "double"
+    this.emitOptions()
+  }
+
+  onEncodingChange(): void {
+    this.emitOptions()
+  }
+
+  onTrimWhitespaceChange(): void {
+    this.emitOptions()
+  }
+
+  async processData(): Promise<void> {
+    if (!this.selectedFile) {
+      this.onError.emit("No file selected. Please select a file first.")
+      return
+    }
+
+    if (this.isProcessing) {
+      return 
+    }
+
+    this.isProcessing = true
+    console.log("Processing data with options:", this.getOptions())
+
+    try {
+      const jsonResult = await this.csvService.convertFileToJson(this.selectedFile, this.getOptions())
+      this.isProcessing = false
+      console.log("Processing completed successfully:", jsonResult)
+      this.onConvert.emit(jsonResult)
+      this.onOptionsChange.emit(this.getOptions())
+    } catch (error) {
+      this.isProcessing = false
+      console.error("Processing failed:", error)
+      this.onError.emit("Error processing file: " + error)
     }
   }
-  
-  // Then, all event handlers become:
-  onHeaderCheckboxChange(): void { this.processSelectedFile(); }
-  onSkipEmptyLinesChange(): void { this.processSelectedFile(); }
-  onDelimiterChange(): void { this.processSelectedFile(); }
-  onRowDelimiterChange(): void { this.processSelectedFile(); }
-  onRowPrefixChange(): void { this.processSelectedFile(); }
-  onRowSuffixChange(): void { this.processSelectedFile(); }
-  onDoubleQuoteWrapChange(): void {
-    this.selectedQuoteOption = this.doubleQuoteWrap ? "double" : "none";
-    this.processSelectedFile();
-  }
-  onQuoteOptionChange(): void {
-    this.doubleQuoteWrap = this.selectedQuoteOption === "double";
-    this.processSelectedFile();
-  }
-  onEncodingChange(): void { this.processSelectedFile(); }
-  onTrimWhitespaceChange(): void { this.processSelectedFile(); }
   
 }
