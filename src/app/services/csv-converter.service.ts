@@ -192,23 +192,16 @@ export class CsvConverterService {
 
     console.log(`Cleaning prefix "${options.rowPrefix}" and suffix "${options.rowSuffix}" from:`, values)
 
-    // Clean prefix from first column
-    if (options.rowPrefix && cleanedValues[0] && cleanedValues[0].startsWith(options.rowPrefix)) {
-      cleanedValues[0] = cleanedValues[0].substring(options.rowPrefix.length)
-      console.log(`Removed prefix from first column: "${cleanedValues[0]}"`)
+    // kullanıcı prefıx gırmıs mı && ılk sutun var mı
+    if (options.rowPrefix.trim() !== "" && cleanedValues[0]) {
+      cleanedValues[0] = cleanedValues[0].substring(options.rowPrefix.length) //prefix'in uzunluğundan tüm stringin sonuna kadar alıyor
     }
 
     // Clean suffix from last column
     if (
-      options.rowSuffix &&
-      cleanedValues[cleanedValues.length - 1] &&
-      cleanedValues[cleanedValues.length - 1].endsWith(options.rowSuffix)
-    ) {
+      options.rowSuffix.trim() !== "" && cleanedValues[cleanedValues.length - 1]) {
       const lastIndex = cleanedValues.length - 1
-      cleanedValues[lastIndex] = cleanedValues[lastIndex].substring(
-        0,
-        cleanedValues[lastIndex].length - options.rowSuffix.length,
-      )
+      cleanedValues[lastIndex] = cleanedValues[lastIndex].substring(0, cleanedValues[lastIndex].length - options.rowSuffix.length) // 0. indexten rowsuffix'in uzunluğuna kadar gidiyor
       console.log(`Removed suffix from last column: "${cleanedValues[lastIndex]}"`)
     }
 
