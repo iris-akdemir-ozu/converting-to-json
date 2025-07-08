@@ -25,7 +25,7 @@ export class CsvConverterService {
 
   hasPrefixAndSuffix(options: CsvOptions): boolean {
     //row prefix veya suffix'e bir şey girilmiş mi diye kontrol ediyor
-    return options.rowPrefix.trim() !== "" && options.rowSuffix.trim() !== ""
+    return options.rowPrefix.trim() !== "" || options.rowSuffix.trim() !== ""
   }
 
   quoteCharacter(options: CsvOptions): string {
