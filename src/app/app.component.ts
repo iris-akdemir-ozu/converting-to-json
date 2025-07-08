@@ -1,5 +1,5 @@
 import { Component } from "@angular/core"
-
+import { DatabaseService } from "./services/database.service"
 // Interface to define the structure of our data
 interface TableData {
   [key: string]: any // This allows dynamic properties
@@ -49,6 +49,8 @@ export class AppComponent {
     selectedQuoteOption: "none",
     trimWhitespace: true,
   }
+
+  constructor(private databaseService: DatabaseService) {}
 
 
   /**
@@ -119,6 +121,34 @@ export class AppComponent {
 
     // This is where you would make your HTTP request to the backend
     console.log("Sending to backend:", this.jsonData)
-    alert("Data would be sent to backend (check console for details)")
+
+    this.databaseService.saveCsvData(this.jsonData).subscribe({
+      next: (response) => {
+        console.log("Data saved successfully:", response)
+        alert(
+          `Success! Saved ${response.insertedIds ? Object.keys(response.insertedIds).length : "unknown"} records to MongoDB`,
+        )
+      },
+      error: (error) => {
+        console.error("Error saving data:", error)
+        alert("Error saving data to database: " + error.message)
+      },
+    })
+  }
+
+  loadFromDatabase(): void {
+    this.databaseService.getCsvData().subscribe({
+      next: (response) => {
+        console.log("Data loaded from MongoDB:", response)
+        if (response.success && response.data) {
+          // You can display this data or use it as needed
+          alert(`Loaded ${response.data.length} records from database`)
+        }
+      },
+      error: (error) => {
+        console.error("Error loading data:", error)
+        alert("Error loading data from database: " + error.message)
+      },
+    })
   }
 }
