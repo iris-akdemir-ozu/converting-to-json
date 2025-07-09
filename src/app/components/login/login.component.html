@@ -1,0 +1,59 @@
+<div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <p>Sign in to manage your CSV files</p>
+      </div>
+  
+      <form (ngSubmit)="onSubmit()" class="auth-form">
+        <!-- Email Field -->
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            class="form-control"
+            placeholder="Enter your email"
+            [disabled]="isLoading"
+            required>
+        </div>
+  
+        <!-- Password Field -->
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            [(ngModel)]="password"
+            name="password"
+            class="form-control"
+            placeholder="Enter your password"
+            [disabled]="isLoading"
+            required>
+        </div>
+  
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+  
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="btn btn-primary btn-full"
+          [disabled]="isLoading">
+          <span *ngIf="isLoading">Logging in...</span>
+          <span *ngIf="!isLoading">Login</span>
+        </button>
+      </form>
+  
+      <!-- Register Link -->
+      <div class="auth-footer">
+        <p>Don't have an account? 
+          <a (click)="goToRegister()" class="auth-link">Register here</a>
+        </p>
+      </div>
+    </div>
+  </div>
+  

@@ -1,0 +1,60 @@
+<div class="dashboard-container">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="header-content">
+        <h1>CSV Manager Dashboard</h1>
+        <div class="user-info">
+          <span *ngIf="currentUser">Welcome, {{ currentUser.username }}!</span>
+          <button class="btn btn-outline" (click)="logout()">Logout</button>
+        </div>
+      </div>
+    </header>
+  
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <div class="container">
+        <div class="welcome-card">
+          <h2>Welcome to Your CSV Manager</h2>
+          <p>Upload, process, and manage your CSV files with ease.</p>
+        </div>
+  
+        <!-- Your existing CSV uploader component -->
+        <div class="card">
+          <app-csv-uploader 
+            (onConvert)="onCsvConverted($event)"
+            (onError)="onConversionError($event)"
+            (onFileClear)="onFileClear()"
+            (onOptionsChange)="onOptionsChanged($event)">
+          </app-csv-uploader>
+          
+          <!-- Send to Backend Button -->
+          <div *ngIf="jsonData.length > 0" style="margin-top: 20px;">
+            <button class="btn btn-primary" (click)="sendToBackend()">
+              Send Data to Database
+            </button>
+          </div>
+        </div>
+  
+        <!-- Search and Data Table -->
+        <div class="card" *ngIf="jsonData.length > 0">
+          <div class="search-box">
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="searchTerm" 
+              placeholder="Search in table data...">
+          </div>
+          
+          <!-- Data Table Component -->
+          <app-data-table 
+            [data]="jsonData" 
+            [headers]="tableHeaders"
+            [searchTerm]="searchTerm"
+            [hasHeader]="csvOptions.hasHeader"
+            [showQuotes]="!csvOptions.doubleQuoteWrap">
+          </app-data-table>
+        </div>
+      </div>
+    </main>
+  </div>
+  

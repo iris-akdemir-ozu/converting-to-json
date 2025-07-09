@@ -1,12 +1,20 @@
 const express = require("express")
 const { MongoClient } = require("mongodb")
-const cors = require("cors")
-
+const bcrypt = require ('bcryptjs')
+const cors = require('cors');
 const app = express()
+app.use(cors({
+  origin: 'http://localhost:4200', // Allow requests from Angular app
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+const jwt = require('jsonwebtoken');
+
 const port = 3000
+const JWT_SECRET = 'ca48f8c2c87e820934e5f3ed6f0961edab703b9a0b4c80af448fa83b7745955f'; // Change this to a secure secret
+const MONGODB_URI = 'mongodb://localhost:27017/csvmanager'; // Adjust as needed
 
-
-app.use(cors())
 app.use(express.json())
 
 const mongoUrl = "mongodb://localhost:27017"
@@ -82,6 +90,118 @@ app.delete("/api/csv-data", async (req, res) => {
     })
   }
 })
+// Register endpoint
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await db.collection('users').findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const result = await db.collection('users').insertOne({
+      username,
+      email,
+      password: hashedPassword,
+      createdAt: new Date()
+    });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: result.insertedId, email },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'User registered successfully',
+      token,
+      user: { id: result.insertedId, username, email }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ success: false, message: 'Registration failed' });
+  }
+});
+
+// Login endpoint
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await db.collection('users').findOne({ email });
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, email },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: { id: user._id, username: user.username, email: user.email }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ success: false, message: 'Login failed' });
+  }
+});
+
+// Profile endpoint (protected)
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.collection('users').findOne(
+      { _id: req.user.userId },
+      { projection: { password: 0 } }
+    );
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Profile error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get profile' });
+  }
+});
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Access token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    req.user = user;
+    next();
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`)

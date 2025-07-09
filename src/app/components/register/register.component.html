@@ -1,0 +1,94 @@
+<div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>Create Account</h2>
+        <p>Join CSV Manager to start organizing your data</p>
+      </div>
+  
+      <form (ngSubmit)="onSubmit()" class="auth-form">
+        <!-- Username Field -->
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            id="username"
+            type="text"
+            [(ngModel)]="username"
+            name="username"
+            class="form-control"
+            placeholder="Choose a username"
+            [disabled]="isLoading"
+            required>
+        </div>
+  
+        <!-- Email Field -->
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            class="form-control"
+            placeholder="Enter your email"
+            [disabled]="isLoading"
+            required>
+        </div>
+  
+        <!-- Password Field -->
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            [(ngModel)]="password"
+            name="password"
+            class="form-control"
+            placeholder="Create a password (min 6 characters)"
+            [disabled]="isLoading"
+            required>
+        </div>
+  
+        <!-- Confirm Password Field -->
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            class="form-control"
+            placeholder="Confirm your password"
+            [disabled]="isLoading"
+            required>
+        </div>
+
+        <!-- Success Message -->
+        <div *ngIf="successMessage" class="success-message">
+          {{ successMessage }}
+        </div>
+  
+  
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+  
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="btn btn-primary btn-full"
+          [disabled]="isLoading">
+          <span *ngIf="isLoading">Creating Account...</span>
+          <span *ngIf="!isLoading">Create Account</span>
+        </button>
+      </form>
+  
+      <!-- Login Link -->
+      <div class="auth-footer">
+        <p>Already have an account? 
+          <a href="#" (click)="goToLogin()" class="auth-link">Login here</a>
+        </p>
+      </div>
+    </div>
+  </div>
+  

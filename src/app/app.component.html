@@ -1,39 +1,6 @@
 <div class="container">
-  <div class="card">
-    
-    <!-- CSV Uploader Component -->
-    <app-csv-uploader 
-      (onConvert)="onCsvConverted($event)"
-      (onError)="onConversionError($event)"
-      (onFileClear)="onFileClear()"
-      (onOptionsChange)="onOptionsChanged($event)">
-    </app-csv-uploader>
-    
-    <!-- Send to Backend Button -->
-    <div *ngIf="jsonData.length > 0" style="margin-top: 20px;">
-      <button class="btn btn-primary" (click)="sendToBackend()">
-        Send Data
-      </button>
-    </div>
-  </div>
+  
 
-  <!-- Search and Data Table -->
-  <div class="card" *ngIf="jsonData.length > 0">
-    <div class="search-box">
-      <input 
-        type="text" 
-        class="form-control" 
-        [(ngModel)]="searchTerm" 
-        placeholder="Search in table data...">
-    </div>
-    
-    <!-- Data Table Component -->
-    <app-data-table 
-      [data]="jsonData" 
-      [headers]="tableHeaders"
-      [searchTerm]="searchTerm"
-      [hasHeader]="csvOptions.hasHeader"
-      [showQuotes]="!csvOptions.doubleQuoteWrap">
-    </app-data-table>
-  </div>
+  <router-outlet></router-outlet>
+ 
 </div>
