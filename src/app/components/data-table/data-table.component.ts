@@ -13,22 +13,41 @@ export class DataTableComponent {
   @Input() hasHeader = true // New input to know if file has header
   @Input() showQuotes = false // New input to know if quotes should be visible
 
+  // Limit display to first 10000 rows for performance
+  private readonly MAX_DISPLAY_ROWS = 10000
+
   /**
-   * Get filtered data based on search term
-   * @returns Filtered array of data
+   * Get data limited to first 1000 rows for display performance
+   * @returns Limited array of data for display
+   */
+  get displayData(): any[] {
+    return this.data.slice(0, this.MAX_DISPLAY_ROWS)
+  }
+
+  /**
+   * Check if data is truncated for display
+   * @returns True if data has more than 1000 rows
+   */
+  get isDataTruncated(): boolean {
+    return this.data.length > this.MAX_DISPLAY_ROWS
+  }
+
+  /**
+   * Get filtered data based on search term (limited to display data)
+   * @returns Filtered array of display data
    */
   get filteredData(): any[] {
     if (!this.searchTerm) {
-      return this.data
+      return this.displayData
     }
 
-    return this.data.filter((item) => {
+    return this.displayData.filter((item) => {
       return Object.values(item).some((value) => String(value).toLowerCase().includes(this.searchTerm.toLowerCase()))
     })
   }
 
   /**
-   * Get formatted JSON string for debugging
+   * Get formatted JSON string for debugging (limited to display data)
    * @returns Formatted JSON string
    */
   getFormattedJson(): string {

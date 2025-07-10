@@ -1,5 +1,13 @@
 <div *ngIf="data.length > 0; else noData">
-  <h3>Converted Data ({{filteredData.length}} records)</h3>
+  <h3>Converted Data ({{filteredData.length}} of {{data.length}} records shown)</h3>
+  
+  <!-- Truncation Warning -->
+  <div *ngIf="isDataTruncated" class="truncation-warning">
+    <p>
+      <strong>Note:</strong> Showing first 10,000 rows for display performance. 
+      All {{data.length}} rows will be sent to the database when you click "Send Data to Database".
+    </p>
+  </div>
   
   <div class="table-responsive">
     <table class="table">
@@ -23,7 +31,7 @@
 
 <!-- JSON Debug Section - For debugging purposes -->
 <div class="json-debug-section">
-  <h4>JSON Debug Output</h4>
+  <h4>JSON Debug Output (Display Data Only)</h4>
   <div class="json-container">
     <pre class="json-content">{{getFormattedJson()}}</pre>
   </div>
