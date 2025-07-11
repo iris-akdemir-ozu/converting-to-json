@@ -7,6 +7,7 @@
  * Windows-1254 to UTF-8 converter
  * Based on win1254.js
  */
+/*
 export function convertWindows1254ToUTF8(input: Uint8Array): string {
   const len = input.length
   const output: number[] = []
@@ -555,11 +556,16 @@ export function convertWindows1254ToUTF8(input: Uint8Array): string {
   const utf8Bytes = new Uint8Array(output.slice(0, count))
   return new TextDecoder("utf-8").decode(utf8Bytes)
 }
+*/
+function convertWindows1254ToUTF8(input: Uint8Array): string {
+  return new TextDecoder("windows-1254").decode(input);
+}
 
 /**
  * ISO-8859-9 to UTF-8 converter
  * Based on iso9.js
  */
+/*
 export function convertISO8859_9ToUTF8(input: Uint8Array): string {
   const len = input.length
   const output: number[] = []
@@ -1090,6 +1096,10 @@ export function convertISO8859_9ToUTF8(input: Uint8Array): string {
   // Convert byte array to UTF-8 string
   const utf8Bytes = new Uint8Array(output.slice(0, count))
   return new TextDecoder("utf-8").decode(utf8Bytes)
+} 
+  */
+export function convertISO8859_9ToUTF8(input: Uint8Array): string {
+  return new TextDecoder('iso-8859-9').decode(input);
 }
 
 /**

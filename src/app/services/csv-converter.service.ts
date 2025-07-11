@@ -74,17 +74,23 @@ export class CsvConverterService {
     // Filter out completely empty lines
     allLines = allLines.filter((line) => line.trim() !== "")
 
-    // If prefix/suffix are provided, filter lines that match the pattern
+    // If prefix/suffix are provided, separate header and data lines
     if (this.hasPrefixAndSuffix(options)) {
       console.log(`Filtering lines with prefix/suffix: "${options.rowPrefix}" ... "${options.rowSuffix}"`)
 
-      allLines = allLines.filter((line) => {
+      const headerLine = options.hasHeader ? allLines[0] : null
+      const dataLines = allLines.slice(options.hasHeader ? 1 : 0)
+
+      // Filter only data lines for prefix/suffix pattern
+      const filteredDataLines = dataLines.filter((line) => {
         const trimmedLine = line.trim()
-        // Check if line contains both prefix and suffix in the expected positions
         return trimmedLine.includes(options.rowPrefix) && trimmedLine.includes(options.rowSuffix)
       })
 
-      console.log(`Found ${allLines.length} lines matching prefix/suffix pattern`)
+      // Reconstruct allLines with header (if exists) + filtered data lines
+      allLines = headerLine ? [headerLine, ...filteredDataLines] : filteredDataLines
+
+      console.log(`Found ${filteredDataLines.length} data lines matching prefix/suffix pattern`)
     }
 
     if (allLines.length === 0) {
@@ -101,8 +107,8 @@ export class CsvConverterService {
       console.log("Using first line as headers")
       let headerValues = this.parseCSVLine(allLines[0], options)
 
-      // Clean prefix/suffix from header values if they exist
-      if (this.hasPrefixAndSuffix(options)) {
+      // Clean prefix/suffix from header values only if the header actually contains the pattern
+      if (this.hasPrefixAndSuffix(options) && this.rowContainsPrefixSuffix(allLines[0], options)) {
         headerValues = this.cleanPrefixSuffixFromRow(headerValues, options)
       }
 
@@ -117,17 +123,16 @@ export class CsvConverterService {
       if (!firstDataRow) {
         throw new Error("No data found in CSV file")
       }
-      const firstRowValues = this.parseCSVLine(firstDataRow, options)
+      let firstRowValues = this.parseCSVLine(firstDataRow, options)
 
-      // For column count, we need to consider cleaned values
-      let columnCount = firstRowValues.length
+      // Clean prefix/suffix to get accurate column count
       if (this.hasPrefixAndSuffix(options)) {
-        const cleanedValues = this.cleanPrefixSuffixFromRow(firstRowValues, options)
-        columnCount = cleanedValues.length
+        firstRowValues = this.cleanPrefixSuffixFromRow(firstRowValues, options)
       }
 
+      const columnCount = firstRowValues.length
       headers = Array.from({ length: columnCount }, (_, idx) => `column${idx + 1}`)
-      dataLines = allLines
+      dataLines = allLines // Use all lines as data when no header
     }
 
     console.log("Headers:", headers)
@@ -192,17 +197,21 @@ export class CsvConverterService {
 
     console.log(`Cleaning prefix "${options.rowPrefix}" and suffix "${options.rowSuffix}" from:`, values)
 
-    // kullanıcı prefıx gırmıs mı && ılk sutun var mı
-    if (options.rowPrefix.trim() !== "" && cleanedValues[0]) {
-      cleanedValues[0] = cleanedValues[0].substring(options.rowPrefix.length) //prefix'in uzunluğundan tüm stringin sonuna kadar alıyor
+    // Clean prefix from first column only if it actually starts with the prefix
+    if (options.rowPrefix.trim() !== "" && cleanedValues[0] && cleanedValues[0].startsWith(options.rowPrefix)) {
+      cleanedValues[0] = cleanedValues[0].substring(options.rowPrefix.length)
     }
 
-    // Clean suffix from last column
-    if (
-      options.rowSuffix.trim() !== "" && cleanedValues[cleanedValues.length - 1]) {
+    // Clean suffix from last column only if it actually ends with the suffix
+    if (options.rowSuffix.trim() !== "" && cleanedValues[cleanedValues.length - 1]) {
       const lastIndex = cleanedValues.length - 1
-      cleanedValues[lastIndex] = cleanedValues[lastIndex].substring(0, cleanedValues[lastIndex].length - options.rowSuffix.length) // 0. indexten rowsuffix'in uzunluğuna kadar gidiyor
-      console.log(`Removed suffix from last column: "${cleanedValues[lastIndex]}"`)
+      if (cleanedValues[lastIndex].endsWith(options.rowSuffix)) {
+        cleanedValues[lastIndex] = cleanedValues[lastIndex].substring(
+          0,
+          cleanedValues[lastIndex].length - options.rowSuffix.length,
+        )
+        console.log(`Removed suffix from last column: "${cleanedValues[lastIndex]}"`)
+      }
     }
 
     console.log(`Final cleaned values:`, cleanedValues)
@@ -260,5 +269,17 @@ export class CsvConverterService {
       const hasContent = values.some((value) => value.trim() !== "")
       return !hasContent
     }
+  }
+
+  /**
+   * Check if a row contains the specified prefix and suffix pattern
+   */
+  private rowContainsPrefixSuffix(line: string, options: CsvOptions): boolean {
+    if (!this.hasPrefixAndSuffix(options)) {
+      return false
+    }
+
+    const trimmedLine = line.trim()
+    return trimmedLine.includes(options.rowPrefix) || trimmedLine.includes(options.rowSuffix)
   }
 }
