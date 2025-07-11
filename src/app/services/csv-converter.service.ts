@@ -44,12 +44,6 @@ export class CsvConverterService {
     return options.selectedQuoteOption !== "none"
   }
 
-  /**
-   * Escape special regex characters
-   */
-  private escapeRegex(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  }
 
   private parseCsvToJson(csvContent: string, options: CsvOptions): any {
     let allLines: string[]
@@ -108,7 +102,7 @@ export class CsvConverterService {
       let headerValues = this.parseCSVLine(allLines[0], options)
 
       // Clean prefix/suffix from header values only if the header actually contains the pattern
-      if (this.hasPrefixAndSuffix(options) && this.rowContainsPrefixSuffix(allLines[0], options)) {
+      if (this.hasPrefixAndSuffix(options) || this.rowContainsPrefixSuffix(allLines[0], options)) {
         headerValues = this.cleanPrefixSuffixFromRow(headerValues, options)
       }
 
